@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weather App with Geolocation</title>
+  <title>Weather App with Forecast</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -37,11 +37,21 @@
       padding: 20px;
       border-radius: 10px;
       display: inline-block;
-      max-width: 400px;
+      max-width: 600px;
     }
 
     .error {
       color: red;
+    }
+
+    .forecast {
+      margin-top: 20px;
+    }
+
+    .forecast-day {
+      border-top: 1px solid #ccc;
+      margin-top: 10px;
+      padding-top: 10px;
     }
   </style>
 </head>
@@ -60,14 +70,15 @@
     // 🔍 Fetch weather by city name
     async function getWeatherByCity() {
       const city = document.getElementById('cityInput').value.trim();
-
       if (!city) {
         weatherDiv.innerHTML = '<p class="error">Please enter a city name.</p>';
         return;
       }
 
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
-      fetchWeather(url);
+      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+
+      fetchWeather(weatherUrl, forecastUrl);
     }
 
     // 📍 Fetch weather by geolocation
@@ -77,8 +88,9 @@
           (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-            fetchWeather(url);
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+            fetchWeather(weatherUrl, forecastUrl);
           },
           (error) => {
             weatherDiv.innerHTML = `<p class="error">Location access denied. Please search by city name.</p>`;
@@ -89,26 +101,55 @@
       }
     }
 
-    // 🌦️ Fetch and display weather
-    async function fetchWeather(url) {
+    // 🌦️ Fetch and display weather + forecast
+    async function fetchWeather(weatherUrl, forecastUrl) {
       weatherDiv.innerHTML = `<p>Loading...</p>`;
 
       try {
-        const response = await fetch(url);
+        const [weatherRes, forecastRes] = await Promise.all([
+          fetch(weatherUrl),
+          fetch(forecastUrl)
+        ]);
 
-        if (!response.ok) {
+        if (!weatherRes.ok || !forecastRes.ok) {
           throw new Error('City not found or API error.');
         }
 
-        const data = await response.json();
-        const { name, sys, main, weather } = data;
+        const weatherData = await weatherRes.json();
+        const forecastData = await forecastRes.json();
 
-        weatherDiv.innerHTML = `
+        const { name, sys, main, weather } = weatherData;
+
+        let html = `
           <h2>Weather in ${name}, ${sys.country}</h2>
           <p><strong>${weather[0].main}</strong> - ${weather[0].description}</p>
           <p>🌡️ Temperature: ${main.temp}°C</p>
           <p>💧 Humidity: ${main.humidity}%</p>
         `;
+
+        // 📅 5-day forecast at noon
+        const forecastList = forecastData.list.filter(item =>
+          item.dt_txt.includes("12:00:00")
+        );
+
+        html += `<div class="forecast"><h3>5-Day Forecast</h3>`;
+
+        forecastList.forEach(day => {
+          const date = new Date(day.dt * 1000);
+          const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+          html += `
+            <div class="forecast-day">
+              <p><strong>${weekday}</strong> (${date.toLocaleDateString()})</p>
+              <p>${day.weather[0].main} - ${day.weather[0].description}</p>
+              <p>🌡️ Temp: ${day.main.temp}°C</p>
+              <p>💧 Humidity: ${day.main.humidity}%</p>
+            </div>
+          `;
+        });
+
+        html += `</div>`;
+        weatherDiv.innerHTML = html;
+
       } catch (error) {
         weatherDiv.innerHTML = `<p class="error">${error.message}</p>`;
       }
