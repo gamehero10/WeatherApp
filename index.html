@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weather App with Forecast & Icons</title>
+  <title>Weather App with Forecast, Icons & Spinner</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -59,6 +59,22 @@
       width: 50px;
       height: 50px;
     }
+
+    /* Spinner Styles */
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 30px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -106,7 +122,7 @@
     }
 
     async function fetchWeather(weatherUrl, forecastUrl) {
-      weatherDiv.innerHTML = `<p>Loading...</p>`;
+      weatherDiv.innerHTML = `<div class="spinner"></div>`;
 
       try {
         const [weatherRes, forecastRes] = await Promise.all([
