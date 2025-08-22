@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weather App with Forecast</title>
+  <title>Weather App with Forecast & Icons</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -53,6 +53,12 @@
       margin-top: 10px;
       padding-top: 10px;
     }
+
+    img.icon {
+      vertical-align: middle;
+      width: 50px;
+      height: 50px;
+    }
   </style>
 </head>
 <body>
@@ -67,7 +73,6 @@
     const apiKey = 'YOUR_API_KEY_HERE'; // 🔑 Replace with your OpenWeatherMap API key
     const weatherDiv = document.getElementById('weather');
 
-    // 🔍 Fetch weather by city name
     async function getWeatherByCity() {
       const city = document.getElementById('cityInput').value.trim();
       if (!city) {
@@ -81,7 +86,6 @@
       fetchWeather(weatherUrl, forecastUrl);
     }
 
-    // 📍 Fetch weather by geolocation
     function getWeatherByLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -101,7 +105,6 @@
       }
     }
 
-    // 🌦️ Fetch and display weather + forecast
     async function fetchWeather(weatherUrl, forecastUrl) {
       weatherDiv.innerHTML = `<p>Loading...</p>`;
 
@@ -119,15 +122,17 @@
         const forecastData = await forecastRes.json();
 
         const { name, sys, main, weather } = weatherData;
+        const iconCode = weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
         let html = `
           <h2>Weather in ${name}, ${sys.country}</h2>
+          <img class="icon" src="${iconUrl}" alt="${weather[0].description}" />
           <p><strong>${weather[0].main}</strong> - ${weather[0].description}</p>
           <p>🌡️ Temperature: ${main.temp}°C</p>
           <p>💧 Humidity: ${main.humidity}%</p>
         `;
 
-        // 📅 5-day forecast at noon
         const forecastList = forecastData.list.filter(item =>
           item.dt_txt.includes("12:00:00")
         );
@@ -137,9 +142,12 @@
         forecastList.forEach(day => {
           const date = new Date(day.dt * 1000);
           const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+          const icon = `https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png`;
+
           html += `
             <div class="forecast-day">
               <p><strong>${weekday}</strong> (${date.toLocaleDateString()})</p>
+              <img class="icon" src="${icon}" alt="${day.weather[0].description}" />
               <p>${day.weather[0].main} - ${day.weather[0].description}</p>
               <p>🌡️ Temp: ${day.main.temp}°C</p>
               <p>💧 Humidity: ${day.main.humidity}%</p>
@@ -155,7 +163,6 @@
       }
     }
 
-    // 👟 Auto-run on page load
     window.onload = getWeatherByLocation;
   </script>
 
